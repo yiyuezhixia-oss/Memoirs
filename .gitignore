@@ -1,0 +1,11 @@
+node_modules/
+dist/
+.workbuddy/
+证据采集/
+路演图表/
+.env
+.env.*
+!.env.example
+*.log
+测试素材/_coze_probe.txt
+.DS_Store
