@@ -34,6 +34,13 @@ function imageForEntry(entry: TimelineEntry) {
   return heroFamily;
 }
 
+function useFallbackImage(event: React.SyntheticEvent<HTMLImageElement>, fallback: string) {
+  const image = event.currentTarget;
+  if (image.dataset.fallbackApplied) return;
+  image.dataset.fallbackApplied = 'true';
+  image.src = fallback;
+}
+
 async function compressImage(file: File, maxWidth = 900, quality = 0.72): Promise<string> {
   return new Promise((resolve, reject) => {
     const reader = new FileReader();
@@ -137,7 +144,7 @@ function TimelinePage() {
 }
 
 function TimelineCard({ entry, onGenerate, onOpen }: { entry: TimelineEntry; onGenerate: (entry: TimelineEntry) => void; onOpen: (entry: TimelineEntry) => void }) {
-  return <article className="timeline-card" onClick={() => onOpen(entry)}><div className="date-bookmark">{formatDate(entry.startDate)}</div><div className="card-thumb"><img src={imageForEntry(entry)} alt="回忆缩略图" />{entry.imageDataUrls.length > 1 && <span className="thumb-badge">+{entry.imageDataUrls.length}</span>}</div><div className="entry-detail"><div className="entry-title-row"><h2>{entry.title}</h2><span>♡</span></div><p>{entry.content}</p><small>{entry.source === 'ai-organized' ? '✦ AI整理' : '▣ 手动记录'}</small><div className="card-actions"><span>♡　⋯</span><button onClick={(event) => { event.stopPropagation(); onGenerate(entry); }}>☆ 用于生成</button></div></div></article>;
+  return <article className="timeline-card" onClick={() => onOpen(entry)}><div className="date-bookmark">{formatDate(entry.startDate)}</div><div className="card-thumb"><img src={imageForEntry(entry)} alt="回忆缩略图" onError={(event) => useFallbackImage(event, heroFamily)} />{entry.imageDataUrls.length > 1 && <span className="thumb-badge">+{entry.imageDataUrls.length}</span>}</div><div className="entry-detail"><div className="entry-title-row"><h2>{entry.title}</h2><span>♡</span></div><p>{entry.content}</p><small>{entry.source === 'ai-organized' ? '✦ AI整理' : '▣ 手动记录'}</small><div className="card-actions"><span>♡　⋯</span><button onClick={(event) => { event.stopPropagation(); onGenerate(entry); }}>☆ 用于生成</button></div></div></article>;
 }
 
 function EntryDetailView({ entry, onClose, onGenerate }: { entry: TimelineEntry; onClose: () => void; onGenerate: (entry: TimelineEntry) => void }) {
@@ -260,7 +267,7 @@ function GenerateHomePage() {
   const navigate = useNavigate();
   const { state } = useAppStore();
   const recent = state.generationTasks.slice(0, 2);
-  return <Shell active="generate" title="生成" right={<button className="info-button"><Info /> 作品说明</button>}><button className="generate-hero"><img src={generateBanner} alt="把一段回忆变成一件作品" /></button><button className="memory-entry" onClick={() => navigate('/memory-chat')}><img src={aiOrganizeEntry} alt="AI整理回忆" /></button><div className="create-title">✿ 把回忆变成作品 ✦</div><div className="generation-cards">{(['article', 'comic', 'diary-card'] as GenerationType[]).map((type) => <button key={type} onClick={() => navigate(`/generate/${type}`)}><img src={typeEntryImages[type]} alt={`生成${typeLabels[type]}`} /><span>›</span></button>)}</div><div className="recent-heading"><b>✿ 最近创作</b><button>查看全部 ›</button></div><div className="recent-list">{recent.length ? recent.map((task) => <div key={task.id}><img src={typeResultImages[task.type]} alt="作品缩略图" /><span><b>{task.result?.title || '未完成的创作'}</b><small>{task.status === 'saved' ? '已保存' : '继续创作'}</small></span><button onClick={() => navigate(`/generate/${task.type}?taskId=${task.id}`)}>继续创作</button></div>) : <p>新的创作会保存在这里</p>}</div></Shell>;
+  return <Shell active="generate" title="生成" right={<button className="info-button"><Info /> 作品说明</button>}><button className="generate-hero"><img src={generateBanner} alt="把一段回忆变成一件作品" /></button><button className="memory-entry" onClick={() => navigate('/memory-chat')}><img src={aiOrganizeEntry} alt="AI整理回忆" /></button><div className="create-title">✿ 把回忆变成作品 ✦</div><div className="generation-cards">{(['article', 'comic', 'diary-card'] as GenerationType[]).map((type) => <button key={type} onClick={() => navigate(`/generate/${type}`)}><img src={typeEntryImages[type]} alt={`生成${typeLabels[type]}`} /><span>›</span></button>)}</div><div className="recent-heading"><b>✿ 最近创作</b><button onClick={() => navigate('/mine')}>查看全部 ›</button></div><div className="recent-list">{recent.length ? recent.map((task) => <div key={task.id}><img src={typeResultImages[task.type]} alt="作品缩略图" /><span><b>{task.result?.title || '未完成的创作'}</b><small>{task.status === 'saved' ? '已保存' : '继续创作'}</small></span><button onClick={() => navigate(`/generate/${task.type}?taskId=${task.id}`)}>继续创作</button></div>) : <p>新的创作会保存在这里</p>}</div></Shell>;
 }
 
 const prompts: Record<GenerationType, string[]> = {
@@ -271,8 +278,8 @@ const prompts: Record<GenerationType, string[]> = {
 
 function ApiModeHint() {
   const { mode } = loadApiConfig();
-  const text = mode === 'mock' ? '当前：本地 Mock（未连接真实大模型）' : mode === 'llm' ? '当前：直连大模型（AI整理已真实调用）' : '当前：Coze 工作流（生成已真实调用）';
-  return <div className={`api-mode-hint mode-${mode}`}>{text} · 配置已内置，无需手动切换</div>;
+  const text = mode === 'mock' ? '当前：本地 Mock（填写 .env.local 后可接入真实工作流）' : mode === 'llm' ? '当前：大模型对话已启用（生图工作流未配置）' : '当前：真实 Coze 工作流已启用';
+  return <div className={`api-mode-hint mode-${mode}`}>{text}</div>;
 }
 
 function StyleSelector({ value, onChange, disabled }: { value: ArticleStyle; onChange: (style: ArticleStyle) => void; disabled?: boolean }) {
@@ -293,6 +300,7 @@ function GenerationWorkspacePage() {
   const [busy, setBusy] = useState(false);
   const [chatError, setChatError] = useState('');
   const [style, setStyle] = useState<ArticleStyle>('通用');
+  const [images, setImages] = useState<string[]>([]);
   useEffect(() => {
     if (taskId) {
       const existing = store.state.generationTasks.find((item) => item.id === taskId);
@@ -320,15 +328,21 @@ function GenerationWorkspacePage() {
   const session = store.state.chatSessions.find((item) => item.id === (task?.chatSessionId || sessionId));
   const source = store.state.timelineEntries.find((entry) => entry.id === (task?.sourceEntryId || sourceEntryId));
   const preview = task?.status === 'completed' || task?.status === 'saved';
-  const send = async () => { if (!session?.id || !input.trim() || busy) return; setBusy(true); setChatError(''); const content = input.trim(); const outgoing = { role: 'user' as const, content, imageDataUrls: [] as string[] }; const messages = [...session.messages, { id: 'local', ...outgoing, createdAt: new Date().toISOString(), processStatus: 'pending' as const }]; store.addMessage(session.id, outgoing); setInput(''); try { const roleId = generationType === 'article' ? 'article-writer' : generationType === 'comic' ? 'comic-director' : 'diary-card-designer'; const role = store.roles.find((item) => item.id === roleId)!; const response = await chatWithRole(role, messages.map(({ role: messageRole, content: messageContent, imageDataUrls }) => ({ role: messageRole, content: messageContent, imageDataUrls }))); store.appendAssistant(session.id, response.text); } catch (error) { setChatError(error instanceof Error ? error.message : '对话接口调用失败'); } finally { setBusy(false); } };
+  const addImages = async (files: FileList) => {
+    const room = 3 - images.length;
+    if (room <= 0) return;
+    const compressed = await Promise.all([...files].slice(0, room).map((file) => compressImage(file)));
+    setImages((current) => [...current, ...compressed].slice(0, 3));
+  };
+  const send = async () => { if (!session?.id || !input.trim() || busy) return; setBusy(true); setChatError(''); const content = input.trim(); const outgoing = { role: 'user' as const, content, imageDataUrls: images }; const messages = [...session.messages, { id: 'local', ...outgoing, createdAt: new Date().toISOString(), processStatus: 'pending' as const }]; store.addMessage(session.id, outgoing); setInput(''); setImages([]); try { const roleId = generationType === 'article' ? 'article-writer' : generationType === 'comic' ? 'comic-director' : 'diary-card-designer'; const role = store.roles.find((item) => item.id === roleId)!; const response = await chatWithRole(role, messages.map(({ role: messageRole, content: messageContent, imageDataUrls }) => ({ role: messageRole, content: messageContent, imageDataUrls }))); store.appendAssistant(session.id, response.text); } catch (error) { setChatError(error instanceof Error ? error.message : '对话接口调用失败'); } finally { setBusy(false); } };
   const generate = async () => { if (!task || !session || busy) return; setBusy(true); setChatError(''); store.updateTask(task.id, { status: 'generating', style }); try { const roleId = generationType === 'article' ? 'article-writer' : generationType === 'comic' ? 'comic-director' : 'diary-card-designer'; const role = store.roles.find((item) => item.id === roleId)!; const prepared = await prepareGeneration(generationType, session.messages.map(({ role: messageRole, content }) => ({ role: messageRole, content })), source?.content || '', session.messages.flatMap((message) => message.imageDataUrls), role, undefined, generationType === 'article' ? style : undefined); const completed = await runGeneration(generationType, prepared); store.updateTask(task.id, { status: 'completed', result: completed.result }); } catch (error) { store.updateTask(task.id, { status: 'failed', errorMessage: error instanceof Error ? error.message : String(error) }); setChatError(error instanceof Error ? error.message : '生成接口调用失败'); } finally { setBusy(false); } };
   const regenerate = () => { if (task) store.updateTask(task.id, { status: 'draft' }); };
   const save = () => { if (task) store.saveTask(task.id); };
-  return <Shell active="generate" title={`生成${typeLabels[generationType]}`} back right={<span className="status-pill">创作中</span>}><ApiModeHint /><div className="stepper"><span className={!preview ? 'active' : ''}>1 聊聊想法</span><i>→</i><span className={preview ? 'active' : ''}>2 {generationType === 'article' ? '查看文章' : typeLabels[generationType]}</span><i>→</i><span>3 保存作品</span></div><SourceCard entry={source} variant={generationType === 'article' ? 'article' : 'default'} />{task?.status === 'generating' ? <div className="loading-card"><Sparkles size={48} /><h2>正在把这段回忆变成{typeLabels[generationType]}</h2><p>正在整理你的想法，请稍等一下。</p><div className="loading-bar"><i /></div></div> : preview && task ? <GenerationPreview task={task} source={source} onRegenerate={regenerate} onSave={save} /> : <><div className="workspace-chat"><ChatMessages messages={session?.messages || []} loading={busy} /></div>{chatError && <div className="chat-error">{chatError}<button onClick={() => setChatError('')}>知道了</button></div>}<FileComposer value={input} onChange={setInput} onSend={send} placeholder={busy ? '正在连接对话助手…' : '补充你的想法，细节越小越珍贵。'} />{generationType === 'comic' && <p className="safety-note">提示：不承诺真人还原，会生成亲子氛围插画。</p>}{generationType === 'article' && <StyleSelector value={style} onChange={setStyle} disabled={busy} />}<PrimaryButton type="button" disabled={busy} onClick={generate}><WandSparkles /> {busy ? '正在处理…' : `确认生成${typeLabels[generationType]}`}</PrimaryButton></>}</Shell>;
+  return <Shell active="generate" title={`生成${typeLabels[generationType]}`} back right={<span className="status-pill">{task?.status === 'saved' ? '已保存' : preview ? '已生成' : '创作中'}</span>}><ApiModeHint /><div className="stepper"><span className={!preview ? 'active' : ''}>1 聊聊想法</span><i>→</i><span className={preview ? 'active' : ''}>2 {generationType === 'article' ? '查看文章' : typeLabels[generationType]}</span><i>→</i><span>3 保存作品</span></div><SourceCard entry={source} variant={generationType === 'article' ? 'article' : 'default'} />{task?.status === 'generating' ? <div className="loading-card"><Sparkles size={48} /><h2>正在把这段回忆变成{typeLabels[generationType]}</h2><p>正在整理你的想法，请稍等一下。</p><div className="loading-bar"><i /></div></div> : preview && task ? <GenerationPreview task={task} source={source} onRegenerate={regenerate} onSave={save} /> : <><div className="workspace-chat"><ChatMessages messages={session?.messages || []} loading={busy} /></div>{chatError && <div className="chat-error">{chatError}<button onClick={() => setChatError('')}>知道了</button></div>}<FileComposer value={input} onChange={setInput} onSend={send} onImage={(files) => { if (files) void addImages(files); }} placeholder={busy ? '正在连接对话助手…' : '补充你的想法，细节越小越珍贵。'} />{generationType === 'comic' && <p className="safety-note">提示：不承诺真人还原，会生成亲子氛围插画。</p>}{generationType === 'article' && <StyleSelector value={style} onChange={setStyle} disabled={busy} />}<PrimaryButton type="button" disabled={busy} onClick={generate}><WandSparkles /> {busy ? '正在处理…' : `确认生成${typeLabels[generationType]}`}</PrimaryButton></>}</Shell>;
 }
 
 function SourceCard({ entry, variant = 'default' }: { entry?: TimelineEntry; variant?: 'default' | 'article' }) {
-  if (variant !== 'article' && !entry) {
+  if (!entry) {
     return <div className="source-empty"><Sparkles /><div><b>还没有带入回忆</b><p>没关系，可以直接在下面聊天补充素材。</p></div></div>;
   }
   const isArticle = variant === 'article';
@@ -339,7 +353,7 @@ function SourceCard({ entry, variant = 'default' }: { entry?: TimelineEntry; var
   return (
     <section className={`source-card ${isArticle ? 'source-card-article' : ''}`}>
       <span className="source-card-flower" aria-hidden>✿</span>
-      <div className="source-card-pic"><img src={image} alt="" /></div>
+      <div className="source-card-pic"><img src={image} alt="" onError={(event) => useFallbackImage(event, thumbGraduation)} /></div>
       <div className="source-card-info">
         <span className="source-card-tag">已带入回忆</span>
         <h3>{title}</h3>
@@ -351,16 +365,50 @@ function SourceCard({ entry, variant = 'default' }: { entry?: TimelineEntry; var
   );
 }
 
+function paginateArticleText(text: string) {
+  const pages: string[][] = [];
+  const maxChars = 360;
+  let current: string[] = [];
+  let currentSize = 0;
+  const flush = () => {
+    if (current.length) pages.push(current);
+    current = [];
+    currentSize = 0;
+  };
+
+  text.split('\n').map((line) => line.trim()).filter(Boolean).forEach((line) => {
+    const pieces = line.match(/.{1,90}/g) || [line];
+    pieces.forEach((piece) => {
+      if (current.length && currentSize + piece.length > maxChars) flush();
+      current.push(piece);
+      currentSize += piece.length;
+    });
+  });
+  flush();
+  return pages.length ? pages : [[]];
+}
+
 function GenerationPreview({ task, source, onRegenerate, onSave }: { task: GenerationTask; source?: TimelineEntry; onRegenerate: () => void; onSave: () => void }) {
   const isPlaceholder = !task.result?.imageUrls?.[0];
   const resultImage = task.result?.imageUrls?.[0] || typeResultImages[task.type];
   const [showRaw, setShowRaw] = useState(false);
+  const articlePages = useMemo(() => task.type === 'article' ? paginateArticleText(task.result?.text || '') : [[]], [task.type, task.result?.text]);
+  const [articlePage, setArticlePage] = useState(0);
+  useEffect(() => setArticlePage(0), [task.id, task.result?.text]);
+  const articlePageIndex = Math.min(articlePage, articlePages.length - 1);
+  const articleLines = articlePages[articlePageIndex];
   const rawOutput = task.result?.rawOutput && <div className="raw-output"><button className="raw-toggle" onClick={() => setShowRaw((value) => !value)}>{showRaw ? '隐藏' : '查看'}原始返回</button>{showRaw && <pre>{task.result.rawOutput}</pre>}</div>;
 
   if (task.type === 'article') {
-    const articleText = task.result?.text || '';
-    const articleLines = articleText.split('\n').filter((line) => line.trim());
     return <div className="preview-page article-preview-page">
+      {!source && <section className="article-source-fallback">
+        <Sparkles />
+        <div>
+          <small>直接创作</small>
+          <h3>这篇文章来自你的聊天</h3>
+          <p>可以继续补充想法，再生成更贴近心意的版本。</p>
+        </div>
+      </section>}
       <article className="article-page">
         <span className="article-tape" />
         <span className="article-bookmark" />
@@ -372,7 +420,9 @@ function GenerationPreview({ task, source, onRegenerate, onSave }: { task: Gener
           {articleLines.length ? articleLines.map((line, index) => <p key={`${line}-${index}`}>{line}</p>) : <p>文章正在整理中，请返回聊天补充更多想法后重新生成。</p>}
         </div>
         <div className="article-corner-art" aria-hidden><span>✉</span><span>✒</span></div>
+        {articlePages.length > 1 && <span className="article-page-number">第 {articlePageIndex + 1} / {articlePages.length} 页</span>}
       </article>
+      {articlePages.length > 1 && <div className="article-page-turner"><button type="button" disabled={articlePageIndex === 0} onClick={() => setArticlePage((value) => Math.max(0, value - 1))}>上一页</button><span>{articlePageIndex + 1} / {articlePages.length}</span><button type="button" disabled={articlePageIndex === articlePages.length - 1} onClick={() => setArticlePage((value) => Math.min(articlePages.length - 1, value + 1))}>下一页</button></div>}
       <section className="article-adjust-panel">
         <small>接下来你可以</small>
         <div>
@@ -386,7 +436,7 @@ function GenerationPreview({ task, source, onRegenerate, onSave }: { task: Gener
     </div>;
   }
 
-  return <div className="preview-page">{source && <SourceCard entry={source} />}<section className={`result-image ${task.type}`}><img src={resultImage} alt={`${typeLabels[task.type]}预览`} />{isPlaceholder && <span className="placeholder-badge">占位预览</span>}</section><div className="preview-actions"><button onClick={onRegenerate}>继续聊想法<br />再调整细节</button><button className="primary" onClick={onSave}>{task.status === 'saved' ? '已保存作品' : '保存作品'}</button></div>{rawOutput}</div>;
+  return <div className="preview-page">{source && <SourceCard entry={source} />}<section className={`result-image ${task.type}`}><img src={resultImage} alt={`${typeLabels[task.type]}预览`} onError={(event) => useFallbackImage(event, typeResultImages[task.type])} />{isPlaceholder && <span className="placeholder-badge">占位预览</span>}</section><div className="preview-actions"><button onClick={onRegenerate}>继续聊想法<br />再调整细节</button><button className="primary" onClick={onSave}>{task.status === 'saved' ? '已保存作品' : '保存作品'}</button></div>{rawOutput}</div>;
 }
 
 function MyWorksPage() {
@@ -395,7 +445,7 @@ function MyWorksPage() {
   const [tab, setTab] = useState<GenerationType>('article');
   const saved = state.generationTasks.filter((task) => task.status === 'saved');
   const works = saved.filter((task) => task.type === tab);
-  return <Shell active="mine" title="我的" right={<span className="top-icons"><Settings /></span>}><section className="mine-profile"><img src={mineProfile} alt="作品集" /></section><div className="mine-tabs">{(['article', 'comic', 'diary-card'] as GenerationType[]).map((type) => <button className={tab === type ? 'active' : ''} key={type} onClick={() => setTab(type)}>{typeLabels[type]}</button>)}</div><div className="work-list">{works.length ? works.map((task) => { const source = state.timelineEntries.find((entry) => entry.id === task.sourceEntryId); return <button className="work-card" key={task.id} onClick={() => navigate(`/generate/${task.type}?taskId=${task.id}`)}><img src={task.result?.imageUrls?.[0] || typeResultImages[task.type]} alt="作品预览" /><div><small>{typeLabels[task.type]}</small><h3>{task.result?.title || '未命名作品'}</h3><p>来自：{source?.title || '生成页聊天'}</p><span>{task.savedAt ? new Date(task.savedAt).toLocaleDateString('zh-CN') : ''}</span></div><span>›</span></button>; }) : <div className="empty-work"><FileText /><h3>还没有保存的作品</h3><p>去生成页创作后会出现在这里</p></div>}</div></Shell>;
+  return <Shell active="mine" title="我的" right={<span className="top-icons"><Settings /></span>}><section className="mine-profile"><img src={mineProfile} alt="作品集" /></section><div className="mine-tabs">{(['article', 'comic', 'diary-card'] as GenerationType[]).map((type) => <button className={tab === type ? 'active' : ''} key={type} onClick={() => setTab(type)}>{typeLabels[type]}</button>)}</div><div className="work-list">{works.length ? works.map((task) => { const source = state.timelineEntries.find((entry) => entry.id === task.sourceEntryId); return <button className="work-card" key={task.id} onClick={() => navigate(`/generate/${task.type}?taskId=${task.id}`)}><img src={task.result?.imageUrls?.[0] || typeResultImages[task.type]} alt="作品预览" onError={(event) => useFallbackImage(event, typeResultImages[task.type])} /><div><small>{typeLabels[task.type]}</small><h3>{task.result?.title || '未命名作品'}</h3><p>来自：{source?.title || '生成页聊天'}</p><span>{task.savedAt ? new Date(task.savedAt).toLocaleDateString('zh-CN') : ''}</span></div><span>›</span></button>; }) : <div className="empty-work"><FileText /><h3>还没有保存的作品</h3><p>去生成页创作后会出现在这里</p></div>}</div></Shell>;
 }
 
 export default function App() {

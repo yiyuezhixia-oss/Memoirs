@@ -1,6 +1,7 @@
 node_modules/
 dist/
 .workbuddy/
+.playwright-cli/
 证据采集/
 路演图表/
 .env
