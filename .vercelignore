@@ -1,0 +1,23 @@
+# Development and build output
+.git/
+node_modules/
+dist/
+.playwright-cli/
+.workbuddy/
+
+# Local environment and logs
+.env*
+*.log
+_preview.log
+dev.log
+
+# Design source, research and delivery documents are not required by Vite.
+UI图片稿/
+风格参考/
+测试素材/
+证据采集/
+路演图表/
+交付物/
+*.docx
+build_*.cjs
+build_*.js

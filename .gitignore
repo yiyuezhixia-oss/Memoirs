@@ -10,3 +10,4 @@ dist/
 *.log
 测试素材/_coze_probe.txt
 .DS_Store
+.vercel/
