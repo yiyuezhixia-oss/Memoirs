@@ -4,6 +4,14 @@ dist/
 .playwright-cli/
 证据采集/
 路演图表/
+UI图片稿/
+风格参考/
+测试素材/
+交付物/
+/时光书*.md
+/*.docx
+/build_*.cjs
+/build_*.js
 .env
 .env.*
 !.env.example
